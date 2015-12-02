@@ -2,12 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+int ROWS = 9;
+int COLUMNS = 9;
+typedef enum { false, true} bool;
+
 void extractNumbers(char* fileName, int* board);
 void printGrid(int* board);
-int** createArray(int m, int n);
-void printGrid(int** board);
-void extractNumbers(char* fileName, int** board);
 void startSeq(char* name);
+bool sudokuSolved(int board[ROWS][COLUMNS]);
+bool backTracking(int grid[ROWS][COLUMNS]);
+bool numberPlacementValid(int numberToCheck, int checkingRow, int checkingColumn, 
+        int board[ROWS][COLUMNS]);
 
 int main ( int argc, char *argv[] )
 {
@@ -23,86 +28,129 @@ int main ( int argc, char *argv[] )
     }
 }
 
-//void backTracking(int** grid)
+bool backTracking(int grid[ROWS][COLUMNS]) {
+    if (sudokuSolved(grid)) {
+        return true;
+    }
+
+    for (int row = 0; row < ROWS; row++) {
+        for (int column = 0; column < COLUMNS; column++) {
+            if (grid[row][column] == 0) {
+                for (int insertNumber = 1; insertNumber < ROWS + 1; insertNumber++) {
+                    bool isValid = numberPlacementValid(insertNumber, row, 
+                        column, grid);
+                    if (isValid) {
+                        grid[row][column] = insertNumber;
+                        if (backTracking(grid)) {
+                            return true;
+                        }
+                        else {
+                            grid[row][column] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool sudokuSolved(int board[ROWS][COLUMNS]) {
+    int copyGrid[ROWS][COLUMNS];
+    memcpy(copyGrid, board, sizeof(int) * ROWS * COLUMNS);
+    for (int row = 0; row < ROWS; row++) {
+        for (int column = 0; column < COLUMNS; column++) {
+            if (copyGrid[row][column] == 0) {
+                return false;
+            }
+        }
+    }
+    printGrid(&board[0][0]);
+    return true;
+}
+
+bool numberPlacementValid(int numberToCheck, int checkingRow, int checkingColumn, 
+        int board[ROWS][COLUMNS]) {
+
+    int copyGridForChecking[ROWS][COLUMNS];
+    memcpy(copyGridForChecking, board, sizeof(int) * ROWS * COLUMNS);
+
+    // Check if number to check exists in Column
+    int boardValue = 0;
+    for (int row = 0; row < ROWS; row++) {
+        boardValue = copyGridForChecking[row][checkingColumn];
+        if (boardValue == numberToCheck) {
+            return false;
+        }
+    }
+
+    // Check if number to check exists in Row 
+    for (int column = 0; column < COLUMNS; column++) {
+        boardValue = copyGridForChecking[checkingRow][column];
+        if (boardValue == numberToCheck) {
+            return false;
+        }
+    }
+
+    // Check if exists in 3 x 3 grid
+    int rowGrid = checkingRow / 3;
+    int columnGrid = checkingColumn / 3;
+    for (int rowAdd = 0; rowAdd < 3; rowAdd++) {
+        for (int colAdd = 0; colAdd < 3; colAdd++) {
+            boardValue = copyGridForChecking[rowGrid + rowAdd][columnGrid + colAdd];
+            if (boardValue == numberToCheck) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
 
 void startSeq(char* name) {
-    int** grid = createArray(9, 9);
-    extractNumbers(name, grid);
-	int** grid2 = createArray(9, 9); 
-    printGrid(grid);
-    //printGrid(grid2);
-	int array[9][9];
-	array[0][0] = 4;
-    extractNumbers2(name, &array[0][0]);
-    printGrid2(&array[0][0]);
-    int array2[9][9];
-    memcpy(array2, array, sizeof(int) * 81);
-    printGrid2(&array2[0][0]);
-    array2[0][0] = 15;
-    printGrid2(&array2[0][0]);
-    printGrid2(&array[0][0]);
+	int originalGrid[ROWS][COLUMNS];
+    extractNumbers(name, &originalGrid[0][0]);
+    printGrid(&originalGrid[0][0]);
+
+    bool backtracked = backTracking(originalGrid);
+
+    if (backtracked) {
+        printf("We found solution");
+        printGrid(&originalGrid[0][0]);
+    }
+
+    else {
+        printf("Sorry, but we found no solution to to this sudoku puzzle\n");
+    }
 }
 
-void extractNumbers2(char* fileName, int* grid) {
+void extractNumbers(char* fileName, int* grid) {
     FILE *input;
     input = fopen(fileName, "r");
     char inp;
-    for (int row = 0; row < 9; row++) {
-        for (int column = 0; column < 9; column++) {
+    for (int row = 0; row < ROWS; row++) {
+        for (int column = 0; column < COLUMNS; column++) {
             fscanf(input," %c", &inp);
             int number = inp - '0';
-            grid[row * 9 + column] = number;
+            grid[row * COLUMNS + column] = number;
         }
     }
 
     fclose(input);
 }
 
+void printGrid(int* board) {
+    int copyGrid[ROWS][COLUMNS];
+    memcpy(copyGrid, board, sizeof(int) * ROWS * COLUMNS);
 
-void extractNumbers(char* fileName, int** board) {
-    FILE *input;
-    input = fopen(fileName, "r");
-    char inp;
-    for (int row = 0; row < 9; row++) {
-        for (int column = 0; column < 9; column++) {
-            fscanf(input," %c", &inp);
-            int number = inp - '0';
-            board[row][column] = number;
-        }
-    }
-
-    fclose(input);
-}
-
-void printGrid2(int* board) {
     printf("\n");
-    for (int row = 0; row < 9; row++) {
-        for (int column = 0; column < 9; column++) {
-            printf("%d ", board[row * 9 + column]);
+    for (int row = 0; row < ROWS; row++) {
+        for (int column = 0; column < COLUMNS; column++) {
+            //printf("%d ", board[row * COLUMNS + column]);
+            printf("%d ", copyGrid[row][column]);
         }
         printf("\n");
     }
 	printf("\n");
-}
-
-void printGrid(int** board) {
-    printf("\n");
-    for (int row = 0; row < 9; row++) {
-        for (int column = 0; column < 9; column++) {
-            printf("%d ", board[row][column]);
-        }
-        printf("\n");
-    }
-	printf("\n");
-}
-
-int** createArray(int m, int n)
-{
-    int* values = calloc(m*n, sizeof(int));
-    int** rows = malloc(n*sizeof(int*));
-    for (int i=0; i<n; ++i)
-    {
-        rows[i] = values + i*m;
-    }
-    return rows;
 }
