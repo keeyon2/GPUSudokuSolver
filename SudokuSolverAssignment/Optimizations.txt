@@ -1,0 +1,66 @@
+
+Explanation of Algorithm
+-------------------------
+
+CPU
+------------
+In my CPU solution I went with Backtracking, which uses recursion to replace
+valid values into the black spots, and continues to do so until it can't, if it
+can't, it will return up and try new values until it does.  
+
+Esencially trying possible values for all black spots until I get a viable solution.
+
+GPU
+--------------
+My GPU algorithm was my attempt at making the CPU significantly better with the added 
+processing power. Here is the break down.
+
+
+Each Thread will do this.
+
+1.  Find first empty spot
+2.  Fill the empty spot with a random valid number (seeded by unique thread id)
+3.  Find next empty spot
+4.  Fill with random valid number in reguards to the newly updated grid 
+    a.  This random valud number is based on a cuda state that is created with
+        unique seeds, sequence, and offset to ensure each thread will get different
+        results.  I also take into account how many times I run this, so if run 1 
+        doesn't solve, each recurring time I run effects the offset, giving us yet
+        again different random results to help us get to the solution
+5.  Continue to fill all spots by repeating steps 3 - 4
+6.  
+    a. If I have a spot that has no valid numbers, I return from execution.
+    b. If I am able to iterate through the entire grid filling in values, I 
+        have found a solution, so I copy this data back to the host
+
+
+Optimizations
+---------------------
+
+1.  I copy over the global memory sudoku board to shared memory.
+
+2.  I make the block dimensions 9 x 9 to make step 1 easy.
+
+3.  Me make the Grid dimensions 12 x 15 making it so each SM is almost always 
+being fully utilized.  Not quite though.  This way we have fit the data very well and 
+are pretty close to utilizing the SM perfectly without going over any limitations
+
+4.  We Randomize on a state based on unique seeds, sequence and offset to ensure that 
+we are getting random values that are different for each thread, each SM and also different 
+every time we run, so if the first run doesn't get it, then next runs idealy will. 
+
+5.  Also when randomizing which number to replace with, we are randomizing an array from 
+1 - 9, to ensure we only try check puzzle viable numbers and we don't repeat any values
+
+6.  Whenever we go down a path that will not create the solution, we return out to ensure 
+that we do not waste time 
+
+
+Results
+--------------------
+
+Which is better, my sequencial or my GPU solution?  Unfortunately the sequencial solution 
+executed much faster than the GPU version.  The GPU version also inherently depended on randomness
+which makes things a little vary a bit.  The sequencial version executes and solves extremely
+fast making it quite apparent that this problem is not a problem best suited for the GPU.
+
